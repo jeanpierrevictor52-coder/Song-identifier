@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="af">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Liedjie Herkenner</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0f172a;
+    color: #f1f5f9;
+    margin: 0;
+    padding: 24px 16px;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  .card {
+    max-width: 420px;
+    width: 100%;
+  }
+  h1 {
+    font-size: 22px;
+    margin-bottom: 4px;
+  }
+  p.sub {
+    color: #94a3b8;
+    font-size: 14px;
+    margin-top: 0;
+    margin-bottom: 24px;
+  }
+  input[type="text"] {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    border-radius: 10px;
+    border: 1px solid #334155;
+    background: #1e293b;
+    color: #f1f5f9;
+    margin-bottom: 12px;
+  }
+  button {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 10px;
+    border: none;
+    background: #6366f1;
+    color: white;
+    cursor: pointer;
+  }
+  button:disabled {
+    background: #475569;
+  }
+  #result {
+    margin-top: 24px;
+    padding: 16px;
+    border-radius: 10px;
+    background: #1e293b;
+    display: none;
+  }
+  #result.show { display: block; }
+  #result h2 { margin: 0 0 8px 0; font-size: 18px; }
+  #result p { margin: 4px 0; color: #cbd5e1; }
+  #result a { color: #818cf8; }
+  .error { color: #f87171; }
+  .status { color: #94a3b8; font-size: 14px; margin-top: 12px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🎵 Liedjie Herkenner</h1>
+  <p class="sub">Plak 'n skakel na 'n Facebook, TikTok of YouTube video</p>
+
+  <input type="text" id="videoUrl" placeholder="https://www.facebook.com/watch/?v=...">
+  <button id="submitBtn" onclick="identifySong()">Herken Liedjie</button>
+
+  <div class="status" id="status"></div>
+  <div id="result"></div>
+</div>
+
+<script>
+async function identifySong() {
+  const url = document.getElementById('videoUrl').value.trim();
+  const btn = document.getElementById('submitBtn');
+  const status = document.getElementById('status');
+  const resultDiv = document.getElementById('result');
+
+  if (!url) { status.textContent = "Plak eers 'n skakel."; return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Besig...';
+  status.textContent = 'Laai video af en analiseer oudio — kan 20-40 sekondes vat...';
+  resultDiv.classList.remove('show');
+
+  try {
+    const formData = new FormData();
+    formData.append('video_url', url);
+    const res = await fetch('/identify', { method: 'POST', body: formData });
+    const data = await res.json();
+
+    if (data.error) {
+      resultDiv.innerHTML = `<p class="error">${data.error}</p>`;
+      resultDiv.classList.add('show');
+    } else if (data.found) {
+      resultDiv.innerHTML = `
+        <h2>${data.title}</h2>
+        <p>Kunstenaar: ${data.artist}</p>
+        <p>Album: ${data.album || '-'}</p>
+        ${data.spotify ? `<p><a href="${data.spotify}" target="_blank">Open in Spotify</a></p>` : ''}
+      `;
+      resultDiv.classList.add('show');
+    } else {
+      resultDiv.innerHTML = `<p>Geen ooreenstemmende liedjie gevind nie.</p>`;
+      resultDiv.classList.add('show');
+    }
+  } catch (e) {
+    resultDiv.innerHTML = `<p class="error">Iets het verkeerd geloop: ${e.message}</p>`;
+    resultDiv.classList.add('show');
+  } finally {
+    status.textContent = '';
+    btn.disabled = false;
+    btn.textContent = 'Herken Liedjie';
+  }
+}
+</script>
+</body>
+</html>
